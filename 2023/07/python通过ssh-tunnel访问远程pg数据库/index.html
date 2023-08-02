@@ -74,9 +74,29 @@
 </span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
 </span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
 </span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
-<pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#66d9ef">with</span> SSHTunnelForwarder(
+<pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">from</span> sshtunnel <span style="color:#f92672">import</span> SSHTunnelForwarder
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> psycopg2
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> psycopg2.extras
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">with</span> SSHTunnelForwarder(
 </span></span><span style="display:flex;"><span>        (<span style="color:#e6db74">&#39;跳板机host&#39;</span>, 跳板机端口),  <span style="color:#75715e"># 跳板机的host和port</span>
 </span></span><span style="display:flex;"><span>        ssh_username<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;登录跳板机的用户名&#34;</span>, 
 </span></span><span style="display:flex;"><span>        ssh_pkey<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/Users/yebangyu/.ssh/id_rsa&#34;</span>, <span style="color:#75715e"># ssh key</span>
@@ -88,9 +108,19 @@
 </span></span><span style="display:flex;"><span>                            password <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;xxxxxx&#39;</span>,
 </span></span><span style="display:flex;"><span>                            database <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;xxxxxx&#39;</span>)
 </span></span><span style="display:flex;"><span>    curs <span style="color:#f92672">=</span> conn<span style="color:#f92672">.</span>cursor()
-</span></span><span style="display:flex;"><span>    sql <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;xxxxxxxxx;&#34;</span>
-</span></span><span style="display:flex;"><span>    curs<span style="color:#f92672">.</span>execute(sql)
-</span></span><span style="display:flex;"><span>    conn<span style="color:#f92672">.</span>commit()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    sql <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;&#34;insert into my_tables(id, user_id, create_time) VALUES </span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> &#34;&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>    values_list <span style="color:#f92672">=</span> []
+</span></span><span style="display:flex;"><span>    value <span style="color:#f92672">=</span> [(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#e6db74">&#34;2023-01-01 00:00:00.000&#34;</span>)]
+</span></span><span style="display:flex;"><span>    values_list<span style="color:#f92672">.</span>append(value)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span>:
+</span></span><span style="display:flex;"><span>        psycopg2<span style="color:#f92672">.</span>extras<span style="color:#f92672">.</span>execute_batch(curs, sql, values_list, page_size<span style="color:#f92672">=</span><span style="color:#ae81ff">1000</span>)
+</span></span><span style="display:flex;"><span>        conn<span style="color:#f92672">.</span>commit()
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> e:
+</span></span><span style="display:flex;"><span>        print(e)
+</span></span><span style="display:flex;"><span>    curs<span style="color:#f92672">.</span>close()
+</span></span><span style="display:flex;"><span>    conn<span style="color:#f92672">.</span>close()
 </span></span></code></pre></td></tr></table>
 </div>
 </div>
