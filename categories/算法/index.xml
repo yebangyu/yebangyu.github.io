@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>算法 on Yebangyu</title>
+    <link>https://www.yebangyu.org/categories/%E7%AE%97%E6%B3%95/</link>
+    <description>Recent content in 算法 on Yebangyu</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-Hans</language>
+    <lastBuildDate>Wed, 02 Aug 2023 21:26:12 +0800</lastBuildDate><atom:link href="https://www.yebangyu.org/categories/%E7%AE%97%E6%B3%95/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>深入解析快速排序</title>
+      <link>https://www.yebangyu.org/2023/08/%E6%B7%B1%E5%85%A5%E8%A7%A3%E6%9E%90%E5%BF%AB%E9%80%9F%E6%8E%92%E5%BA%8F/</link>
+      <pubDate>Wed, 02 Aug 2023 21:26:12 +0800</pubDate>
+      
+      <guid>https://www.yebangyu.org/2023/08/%E6%B7%B1%E5%85%A5%E8%A7%A3%E6%9E%90%E5%BF%AB%E9%80%9F%E6%8E%92%E5%BA%8F/</guid>
+      <description>&lt;p&gt;本文将对快速排序进行深入的分析和介绍。通过学习本文，您将&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;秒杀快速排序面试&lt;/li&gt;
+&lt;li&gt;掌握高效实现快排&lt;/li&gt;
+&lt;li&gt;加深范型编程意识&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;八卦花絮&#34;&gt;八卦花絮&lt;/h2&gt;
+&lt;p&gt;快速排序是由图灵奖获得者、计算机语言设计大佬C. A. R. Hoare在他26岁时提出的。说起C. A. R. Hoare老爷爷，可能很多人的第一印象就是快速排序，但是快排仅仅是他人生中非常小的成就而已。例如，他在1978年提出的Communicating Sequential Processes(CSP)理论，则深深的影响了并行程序设计，Go语言中的Goroutine就是这种典范。&lt;/p&gt;</description>
+    </item>
+    
+  </channel>
+</rss>
