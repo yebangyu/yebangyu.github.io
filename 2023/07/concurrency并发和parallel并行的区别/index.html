@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-Hans" lang="zh-Hans">
+<head>
+  <link href="https://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.115.0">
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Concurrency(并发)和Parallel(并行)的区别 &middot; Yebangyu</title>
+  <meta name="description" content="" />
+
+  
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/print.css" media="print">
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/poole.css">
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/syntax.css">
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/hyde.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Abril+Fatface|PT+Sans:400,400i,700">
+
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  
+</head>
+
+  <body class=" ">
+  <aside class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="https://www.yebangyu.org/"><h1>Yebangyu</h1></a>
+      <p class="lead">
+       热爱生活、历史与计算机 
+      </p>
+    </div>
+
+    <nav>
+      <ul class="sidebar-nav">
+        <li><a href="https://www.yebangyu.org/">Home</a> </li>
+        <li><a href="https://www.yebangyu.org/about/"> About Me </a></li><li><a href="https://www.yebangyu.org/categories/"> Categories </a></li>
+      </ul>
+    </nav>
+
+    <p>Copyright (c) 2023</p>
+  </div>
+</aside>
+
+    <main class="content container">
+    <div class="post">
+  <h1>Concurrency(并发)和Parallel(并行)的区别</h1>
+  <time datetime=2023-07-07T12:02:53&#43;0800 class="post-date">Fri, Jul 7, 2023</time>
+  <p>什么是并发(<strong>Concurrency，Concurrent</strong>)，什么是并行(<strong>Parallism，Parallel</strong>)？这两者有什么区别？本文收录一下我听过的、我见过的、我看过的一些人的看法。仅供参考：</p>
+<h2 id="paul-butcher">Paul Butcher</h2>
+<p><strong>Paul Butcher</strong>在他的《<strong>Seven Concurrency Models in Seven Weeks</strong>
+》里开篇就谈到：</p>
+<p>An alternative way of thinking about this is that concurrency is an aspect of
+the problem domain—your program needs to handle multiple simultaneous
+(or near-simultaneous) events. Parallelism, by contrast, is an aspect of the
+solution domain—you want to make your program faster by processing different
+portions of the problem in parallel</p>
+<p>也就是说，并发是<strong>问题域</strong>，并行是<strong>解决域</strong>。问题是并发的，解决方法是并行的。</p>
+<h2 id="rob-pike">Rob Pike</h2>
+<p><strong>Rob</strong>是<strong>Go</strong>语言之父，《<strong>The Unix Programming Environment</strong>》 和 《<strong>The Practice of Programming</strong>》的作者。他有一个经典的解释：</p>
+<p>Concurrency is about dealing with lots of things at once.</p>
+<p>Parallelism is about doing lots of things at once.</p>
+<p>有点意思。</p>
+<h2 id="paul-e-mckenney">Paul E. McKenney</h2>
+<p>又是一个<strong>Paul</strong>。不过这个<strong>Paul</strong>是<strong>IBM</strong>的研究人员，写了一本非常幽默并且有深度的书：《<strong>Is Parallel Programming Hard, And, If So, What Can You Do About It?</strong>》。在这本书（<strong>v2015.01.31a</strong>版本）的第<strong>319</strong>页，有一个附录，介绍 <strong>What is the Difference Between</strong>
+“<strong>Concurrent</strong>” <strong>and</strong> “<strong>Parallel</strong>”?时说：</p>
+<p>From a classic computing perspective, “concurrent” and
+“parallel” are clearly synonyms. However, this has not
+stopped many people from drawing distinctions between
+the two</p>
+<p>说明<strong>Paul</strong>认为，其实这两者是一回事，有些人非得区分。这些人是如何区分呢？有两个<strong>perspective</strong>：</p>
+<p>The first perspective treats “parallel” as an abbreviation
+for “data parallel,” and treats “concurrent” as pretty
+much everything else</p>
+<p>也就是说，<strong>concurrency</strong>有很强的<strong>interdependencies</strong>，它们之间可能要做各种通信，基于比如说<strong>locks</strong>啊，<strong>transactions</strong>啊，等等同步机制。相比，<strong>parallel</strong>中组件的相互依赖就很少。</p>
+<p>Now, this second perspective can be thought of as making
+the workload match the available scheduler, with parallel
+workloads able to operate on a simple scheduler
+and concurrent workloads requiring more sophisticated
+schedulers.</p>
+<p>恩，第二个角度就是需不需要复杂的<strong>scheduler</strong>。</p>
+<p>但是<strong>Paul</strong>大叔说，这两个视角很可能是不可兼得或者说矛盾的。此话怎讲？</p>
+<p>考虑每个<strong>CPU</strong>一个线程的基于<strong>lock</strong>通信的程序。是<strong>Concurrency</strong>吗？从第一个角度讲，是的，用<strong>lock</strong>啊，各种同步各种通信啊。从第二个角度看，又不是。</p>
+<p>以上就是<strong>Paul McKenney</strong>大致的观点。</p>
+<h2 id="yebangyu">yebangyu</h2>
+<p><strong>yebangyu</strong>是博主，<strong>yebangyu.org</strong>公司CEO兼站长兼董事长兼老板，苦逼屌丝底层搬砖码农。</p>
+<p>个人观点：</p>
+<p>1，<strong>Concurrency</strong>这个单词含有类“occur”的词根，表示发生，<strong>con</strong>代表共同、一起，指共同发生的意思。而<strong>parallel</strong>词根是<strong>para</strong>，表示相同的、类似、平行的、差不多的。因为，也可以认为问题是同时发生的，解决方法是平行处理。</p>
+<p>2，写书在取书名的时候需要区分。如果你是讲<strong>MPI、Open MP</strong>这类技术，建议用并行或者说<strong>Parallel Computing</strong>。如果是讲<strong>lock free、multi-thread</strong>这些共享内存编程的，建议用<strong>Concurrency</strong>或者<strong>Concurrency Programming</strong>。</p>
+
+</div>
+
+
+    </main>
+
+    
+      
+    
+  </body>
+</html>

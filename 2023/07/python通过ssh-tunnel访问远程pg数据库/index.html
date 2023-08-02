@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-Hans" lang="zh-Hans">
+<head>
+  <link href="https://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.115.0">
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Python通过SSH Tunnel访问远程pg数据库 &middot; Yebangyu</title>
+  <meta name="description" content="" />
+
+  
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/print.css" media="print">
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/poole.css">
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/syntax.css">
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/hyde.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Abril+Fatface|PT+Sans:400,400i,700">
+
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  
+</head>
+
+  <body class=" ">
+  <aside class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="https://www.yebangyu.org/"><h1>Yebangyu</h1></a>
+      <p class="lead">
+       热爱生活、历史与计算机 
+      </p>
+    </div>
+
+    <nav>
+      <ul class="sidebar-nav">
+        <li><a href="https://www.yebangyu.org/">Home</a> </li>
+        <li><a href="https://www.yebangyu.org/about/"> About Me </a></li><li><a href="https://www.yebangyu.org/categories/"> Categories </a></li>
+      </ul>
+    </nav>
+
+    <p>Copyright (c) 2023</p>
+  </div>
+</aside>
+
+    <main class="content container">
+    <div class="post">
+  <h1>Python通过SSH Tunnel访问远程pg数据库</h1>
+  <time datetime=2023-07-06T13:25:41&#43;0800 class="post-date">Thu, Jul 6, 2023</time>
+  <p>废话少说，一共三台机器：</p>
+<p>办公机（mac）：平常写代码的机器。想在这台机器上运行python代码就可以访问到pg数据库</p>
+<p>跳板机：阿里云的机器，只有通过这个跳板机，才可以访问到部署在阿里云上的pg数据库</p>
+<p>数据库机器：</p>
+<p>方法很简单，直接看代码：</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#66d9ef">with</span> SSHTunnelForwarder(
+</span></span><span style="display:flex;"><span>        (<span style="color:#e6db74">&#39;跳板机host&#39;</span>, 跳板机端口),  <span style="color:#75715e"># 跳板机的host和port</span>
+</span></span><span style="display:flex;"><span>        ssh_username<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;登录跳板机的用户名&#34;</span>, 
+</span></span><span style="display:flex;"><span>        ssh_pkey<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/Users/yebangyu/.ssh/id_rsa&#34;</span>, <span style="color:#75715e"># ssh key</span>
+</span></span><span style="display:flex;"><span>        remote_bind_address<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#39;数据库host&#39;</span>, 数据库端口)) <span style="color:#66d9ef">as</span> server: <span style="color:#75715e"># 数据库的host和port</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    conn <span style="color:#f92672">=</span> psycopg2<span style="color:#f92672">.</span>connect(host<span style="color:#f92672">=</span>server<span style="color:#f92672">.</span>local_bind_host, <span style="color:#75715e"># 注意这里的用法。</span>
+</span></span><span style="display:flex;"><span>                            port<span style="color:#f92672">=</span>server<span style="color:#f92672">.</span>local_bind_port, <span style="color:#75715e"># 注意这里的用法。</span>
+</span></span><span style="display:flex;"><span>                            user <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;postgres&#39;</span>,
+</span></span><span style="display:flex;"><span>                            password <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;xxxxxx&#39;</span>,
+</span></span><span style="display:flex;"><span>                            database <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;xxxxxx&#39;</span>)
+</span></span><span style="display:flex;"><span>    curs <span style="color:#f92672">=</span> conn<span style="color:#f92672">.</span>cursor()
+</span></span><span style="display:flex;"><span>    sql <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;xxxxxxxxx;&#34;</span>
+</span></span><span style="display:flex;"><span>    curs<span style="color:#f92672">.</span>execute(sql)
+</span></span><span style="display:flex;"><span>    conn<span style="color:#f92672">.</span>commit()
+</span></span></code></pre></td></tr></table>
+</div>
+</div>
+</div>
+
+
+    </main>
+
+    
+      
+    
+  </body>
+</html>

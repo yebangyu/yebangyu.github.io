@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>并发编程 on Yebangyu</title>
+    <link>https://www.yebangyu.org/categories/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/</link>
+    <description>Recent content in 并发编程 on Yebangyu</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-Hans</language>
+    <lastBuildDate>Fri, 07 Jul 2023 12:02:53 +0800</lastBuildDate><atom:link href="https://www.yebangyu.org/categories/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Concurrency(并发)和Parallel(并行)的区别</title>
+      <link>https://www.yebangyu.org/2023/07/concurrency%E5%B9%B6%E5%8F%91%E5%92%8Cparallel%E5%B9%B6%E8%A1%8C%E7%9A%84%E5%8C%BA%E5%88%AB/</link>
+      <pubDate>Fri, 07 Jul 2023 12:02:53 +0800</pubDate>
+      
+      <guid>https://www.yebangyu.org/2023/07/concurrency%E5%B9%B6%E5%8F%91%E5%92%8Cparallel%E5%B9%B6%E8%A1%8C%E7%9A%84%E5%8C%BA%E5%88%AB/</guid>
+      <description>介绍了好几个大佬对于并发和并行的认识，很可供参考</description>
+    </item>
+    
+    <item>
+      <title>Epoch Base Reclamation</title>
+      <link>https://www.yebangyu.org/2023/07/epoch-base-reclamation/</link>
+      <pubDate>Thu, 06 Jul 2023 10:09:52 +0800</pubDate>
+      
+      <guid>https://www.yebangyu.org/2023/07/epoch-base-reclamation/</guid>
+      <description>介绍一种无锁垃圾回收算法</description>
+    </item>
+    
+  </channel>
+</rss>

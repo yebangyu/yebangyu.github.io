@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Yebangyu</title>
+    <link>https://www.yebangyu.org/</link>
+    <description>Recent content on Yebangyu</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-Hans</language>
+    <lastBuildDate>Fri, 07 Jul 2023 16:11:25 +0800</lastBuildDate><atom:link href="https://www.yebangyu.org/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>开放平台设计第1篇：接口安全</title>
+      <link>https://www.yebangyu.org/2023/07/%E5%BC%80%E6%94%BE%E5%B9%B3%E5%8F%B0%E8%AE%BE%E8%AE%A1%E7%AC%AC1%E7%AF%87%E6%8E%A5%E5%8F%A3%E5%AE%89%E5%85%A8/</link>
+      <pubDate>Fri, 07 Jul 2023 16:11:25 +0800</pubDate>
+      
+      <guid>https://www.yebangyu.org/2023/07/%E5%BC%80%E6%94%BE%E5%B9%B3%E5%8F%B0%E8%AE%BE%E8%AE%A1%E7%AC%AC1%E7%AF%87%E6%8E%A5%E5%8F%A3%E5%AE%89%E5%85%A8/</guid>
+      <description>介绍开放平台中的接口安全问题以及应对方法</description>
+    </item>
+    
+    <item>
+      <title>Concurrency(并发)和Parallel(并行)的区别</title>
+      <link>https://www.yebangyu.org/2023/07/concurrency%E5%B9%B6%E5%8F%91%E5%92%8Cparallel%E5%B9%B6%E8%A1%8C%E7%9A%84%E5%8C%BA%E5%88%AB/</link>
+      <pubDate>Fri, 07 Jul 2023 12:02:53 +0800</pubDate>
+      
+      <guid>https://www.yebangyu.org/2023/07/concurrency%E5%B9%B6%E5%8F%91%E5%92%8Cparallel%E5%B9%B6%E8%A1%8C%E7%9A%84%E5%8C%BA%E5%88%AB/</guid>
+      <description>介绍了好几个大佬对于并发和并行的认识，很可供参考</description>
+    </item>
+    
+    <item>
+      <title>论汉武帝独尊儒术</title>
+      <link>https://www.yebangyu.org/2023/07/%E8%AE%BA%E6%B1%89%E6%AD%A6%E5%B8%9D%E7%8B%AC%E5%B0%8A%E5%84%92%E6%9C%AF/</link>
+      <pubDate>Thu, 06 Jul 2023 17:31:49 +0800</pubDate>
+      
+      <guid>https://www.yebangyu.org/2023/07/%E8%AE%BA%E6%B1%89%E6%AD%A6%E5%B8%9D%E7%8B%AC%E5%B0%8A%E5%84%92%E6%9C%AF/</guid>
+      <description>汉武帝并非独尊儒术，真相远非你想的那么简单</description>
+    </item>
+    
+    <item>
+      <title>Python通过SSH Tunnel访问远程pg数据库</title>
+      <link>https://www.yebangyu.org/2023/07/python%E9%80%9A%E8%BF%87ssh-tunnel%E8%AE%BF%E9%97%AE%E8%BF%9C%E7%A8%8Bpg%E6%95%B0%E6%8D%AE%E5%BA%93/</link>
+      <pubDate>Thu, 06 Jul 2023 13:25:41 +0800</pubDate>
+      
+      <guid>https://www.yebangyu.org/2023/07/python%E9%80%9A%E8%BF%87ssh-tunnel%E8%AE%BF%E9%97%AE%E8%BF%9C%E7%A8%8Bpg%E6%95%B0%E6%8D%AE%E5%BA%93/</guid>
+      <description>介绍Python里如何通过SSH Tunnel访问远程数据库</description>
+    </item>
+    
+    <item>
+      <title>Epoch Base Reclamation</title>
+      <link>https://www.yebangyu.org/2023/07/epoch-base-reclamation/</link>
+      <pubDate>Thu, 06 Jul 2023 10:09:52 +0800</pubDate>
+      
+      <guid>https://www.yebangyu.org/2023/07/epoch-base-reclamation/</guid>
+      <description>介绍一种无锁垃圾回收算法</description>
+    </item>
+    
+    <item>
+      <title>About Me</title>
+      <link>https://www.yebangyu.org/about/</link>
+      <pubDate>Thu, 06 Jul 2023 10:02:01 +0800</pubDate>
+      
+      <guid>https://www.yebangyu.org/about/</guid>
+      <description>关于个人履历的介绍</description>
+    </item>
+    
+  </channel>
+</rss>

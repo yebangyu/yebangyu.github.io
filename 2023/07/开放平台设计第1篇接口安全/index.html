@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-Hans" lang="zh-Hans">
+<head>
+  <link href="https://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.115.0">
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>开放平台设计第1篇：接口安全 &middot; Yebangyu</title>
+  <meta name="description" content="" />
+
+  
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/print.css" media="print">
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/poole.css">
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/syntax.css">
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/hyde.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Abril+Fatface|PT+Sans:400,400i,700">
+
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  
+</head>
+
+  <body class=" ">
+  <aside class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="https://www.yebangyu.org/"><h1>Yebangyu</h1></a>
+      <p class="lead">
+       热爱生活、历史与计算机 
+      </p>
+    </div>
+
+    <nav>
+      <ul class="sidebar-nav">
+        <li><a href="https://www.yebangyu.org/">Home</a> </li>
+        <li><a href="https://www.yebangyu.org/about/"> About Me </a></li><li><a href="https://www.yebangyu.org/categories/"> Categories </a></li>
+      </ul>
+    </nav>
+
+    <p>Copyright (c) 2023</p>
+  </div>
+</aside>
+
+    <main class="content container">
+    <div class="post">
+  <h1>开放平台设计第1篇：接口安全</h1>
+  <time datetime=2023-07-07T16:11:25&#43;0800 class="post-date">Fri, Jul 7, 2023</time>
+  <p>假如某天我创业了，我们公司具备非常强悍的数据服务能力。</p>
+<p>于是我们考虑商业化，将这部分能力通过API的形式对外提供。</p>
+<p>这就需要开发一个开放平台。如何设计这样的开放平台呢？首先第一个要处理的就是接口安全问题，而接口安全涉及到两个层面：身份识别和回放攻击。</p>
+<h2 id="身份识别">身份识别</h2>
+<p>换句话说，怎么知道发请求的人是合法用户（客户）？</p>
+<p>在很多文章中都会提到AppID、AppPublicKey、AppSecretKey这三个概念：</p>
+<p>AppID：唯一标识一个用户或者客户</p>
+<p>AppPublicKey：公钥，可对外暴露</p>
+<p>AppSecretKey：私钥，必须严格保密</p>
+<p>在绝大多数场景中，只要AppID和AppSecretKey就可以了。下面介绍具体用法：</p>
+<p>客户端请求服务端时，需要先生成一个随机数nonce，然后使用私钥（AppSecretKey），对AppID、客户端当前时间戳timestamp、nonce字段生成一个签名signature(sign)，然后连同这几个字段一起发给服务端。伪代码如下：</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span>timestamp <span style="color:#f92672">=</span> Now.CurrentTime()
+</span></span><span style="display:flex;"><span>nonce <span style="color:#f92672">=</span> Random()
+</span></span><span style="display:flex;"><span>str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;AppID = &#34;</span> <span style="color:#f92672">+</span> AppID  <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; &amp;&amp; nonce = &#34;</span> <span style="color:#f92672">+</span> nonce <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; &amp;&amp; timestamp = &#34;</span> <span style="color:#f92672">+</span> timestamp
+</span></span><span style="display:flex;"><span>sign <span style="color:#f92672">=</span> SHA256(str, AppSecretKey) <span style="color:#75715e">// 利用私钥对str进行签名
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>http_request <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;https://www.xxx.com/&#34;</span> <span style="color:#f92672">+</span> str <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; &amp;&amp; sign = &#34;</span> <span style="color:#f92672">+</span> sign
+</span></span><span style="display:flex;"><span>get(http_request)
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>注意，私钥AppSecretKey绝对不应该出现在请求里。</p>
+<p>服务端收到请求后，先通过请求参数里的AppID查到对应的AppSecretKey，使用同样的方法，对AppID、timestamp、nonce进行签名，然后判断和请求参数里的sign是否相等。如果相等，身份校验通过，否则校验失败</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span>AppID <span style="color:#f92672">=</span> GetAppIDFromRequestParams(http_request)
+</span></span><span style="display:flex;"><span>nonce <span style="color:#f92672">=</span> GetNonceFromRequestParams(http_request)
+</span></span><span style="display:flex;"><span>timestamp <span style="color:#f92672">=</span> GetTimestampFromRequestParams(http_request)
+</span></span><span style="display:flex;"><span>sign_from_request <span style="color:#f92672">=</span> GetSignFromRequestParams(http_request)
+</span></span><span style="display:flex;"><span>AppSecretKey <span style="color:#f92672">=</span> GetAppSecretKeyByAppIDFromDB(AppID)
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 利用这些字段和私钥，生成一个sign
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;AppID = &#34;</span> <span style="color:#f92672">+</span> AppID  <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; &amp;&amp; nonce = &#34;</span> <span style="color:#f92672">+</span> nonce <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; &amp;&amp; timestamp = &#34;</span> <span style="color:#f92672">+</span> timestamp
+</span></span><span style="display:flex;"><span>sign <span style="color:#f92672">=</span> SHA256(str, AppSecretKey)
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> (sign <span style="color:#f92672">==</span> sign_from_request) {
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// ok 
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>} <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// bad
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>注意事项：</p>
+<p>1，生成str时字段的摆放顺序，可以按照对field（AppId、timestamp、nonce）进行字典序排序。只要客户端和服务端都同时约定好就行。</p>
+<p>2，timestamp和nonce还有别的用途。下面会继续介绍</p>
+<p>3，一般说来，平台给每个客户只分配一个AppID，但是一个客户可以有多个AppSecretKey，不同的AppSecretKey用于不同的接口或者对应不同的权限。如果是这种情况，那么客户端发请求的时候需要在参数里把对应的AppPublicKey带上（仍然使用AppSecretKey进行签名），服务端收到请求后，通过AppID + AppPublicKey唯一定位对应的AppSecretKey。</p>
+<h2 id="回放攻击">回放攻击</h2>
+<p>使用上面的方案，身份识别的问题是解决了，但是还是存在回放攻击的问题：攻击者拿到链接后，重复给服务端发请求。如何解决呢？</p>
+<p>这个本质上是请求判重问题。解决方法如下：</p>
+<p>1，服务端收到请求后，拿出timestamp，和服务端当前时间进行比较，如果超出一个阈值（比如说十分钟），那拒绝该请求。否则继续。</p>
+<p>2，服务端拿出nonce，去db/cache里查询。如果存在，说明请求重复，直接拒绝。如果不存在，正常处理请求，并把nonce写入db/cache。</p>
+<p>由于nonce存储量较大，可以考虑设置一个过期时间。如果使用redis来做选型，则可以使用SetNX命令来实现。</p>
+<p>有资料说nonce在客户端生成，有资料说nonce应该在服务端生成。个人感觉本质没有差别，都是用来唯一标识请求（request_uuid），而在客户端生成会更加自然一点。</p>
+
+</div>
+
+
+    </main>
+
+    
+      
+    
+  </body>
+</html>
