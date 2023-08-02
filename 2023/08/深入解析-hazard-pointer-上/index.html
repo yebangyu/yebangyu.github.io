@@ -265,7 +265,7 @@
 <p>2，对于写线程，真正释放前，需要检查是否有读线程正在操作它。如何知道？看看自己待释放的指针，有没有存在在读线程的<strong>Hazard</strong> <strong>Pointer</strong>里即可。</p>
 <p>至于<strong>55</strong>行，考虑如下情形：读线程刚刚设置了<strong>tmp</strong>指针，还没对它进行保护，就被调度出去；写线程执行<strong>gc</strong>时，发现没有读线程的<strong>Hazard</strong> <strong>Pointer</strong>封装了<strong>tmp</strong>指针，于是将它释放；等读线程重新被调度执行时通过<strong>tmp</strong>进行内存访问，就会导致问题。</p>
 <p>至于<strong>56</strong>行，请读者自行分析。</p>
-<p>那么，Hazard Pointer和Smart Pointer（智能指针），有什么本质上的区别吗？请看<a href="https://www.yebangyu.org/2023/08/%E6%B7%B1%E5%85%A5%E8%A7%A3%E6%9E%90-hazard-pointer-%E4%B8%8B/">下集</a>。</p>
+<p>那么，Hazard Pointer和Smart Pointer（智能指针），有什么本质上的区别吗？请看<a href="https://www.yebangyu.org/2023/08/%E6%B7%B1%E5%85%A5%E8%A7%A3%E6%9E%90-hazard-pointer-%E4%B8%AD/">下集</a>。</p>
 <h2 id="参考文献">参考文献</h2>
 <p><a href="https://www.research.ibm.com/people/m/michael/ieeetpds-2004.pdf">https://www.research.ibm.com/people/m/michael/ieeetpds-2004.pdf</a></p>
 
