@@ -51,8 +51,18 @@
     <main class="content container">
     <div class="post">
   <h1>深入解析 Hazard Pointer (下)</h1>
-  <time datetime=2023-08-02T21:30:06&#43;0800 class="post-date">Wed, Aug 2, 2023</time>
-  <p>看过<a href="https://www.yebangyu.org/2023/08/%E6%B7%B1%E5%85%A5%E8%A7%A3%E6%9E%90-hazard-pointer-%E4%B8%8A/">上篇</a>的朋友，可能会认为：这不就是<strong>Smart Pointer</strong>么？于是可能写出这样的代码：</p>
+  <time datetime=2023-08-02T21:41:39&#43;0800 class="post-date">Wed, Aug 2, 2023</time>
+  <p>在前面几篇<a href="http://www.yebangyu.org/blog/2015/12/10/introduction-to-hazard-pointer/">文章</a>里，我们介绍了Hazard Pointer，一种用于lock free data structure设计中内存管理的利器，这个利器不仅思想简单，还可以用来防止ABA问题，读者诸君务必掌握。</p>
+<p>本文作为第三部分，给出工业级代码中，实现Hazard Pointer的一些策略和需要注意的点。</p>
+<h2 id="hazard-pointer管理">Hazard Pointer管理</h2>
+<p>我们知道Hazard Pointer封装了原始指针，那么Hazard Pointer的内存和生命周期本身如何管理呢？以下是常见的策略：</p>
+<p>1，Hazard Pointer本身的内存只分配，不释放。在stack、queue等数据结构里，需要的Hazard Pointer数量一般为1或者2，所以不释放问题不大。对于skip list这种数据结构又有遍历需求的，那么Hazard Pointer可能就不是非常适用了，可以考虑使用<a href="http://www.yebangyu.org/blog/2016/09/09/epochbasedreclamation/">Epoch Based Reclamation</a>技术。据我所知，这也是memsql使用的内存回收策略。</p>
+<p>2，每个线程拥有、管理自己的retire list和hazard pointer list ，而不是所有线程共享一个retire list，这样可以避免维护retire list和hazard pointer list的开销，否则我们可能又得想尽脑汁去设计另外一套lock free的策略来管理这些list，先有鸡先有蛋，无穷无尽。所谓retire list就是指逻辑删除后待物理回收的指针列表。</p>
+<p>3，每个线程负责回收自己的retire list中记录维护的内存。这样，retire list是一个线程局部的数据结构，自己写，自己读，吃自己的狗粮。</p>
+<p>4，只有当retire list的大小（数量）达到一定的阈值时，才进行GC。这样，可以把GC的开销进行分摊，同时，应该尽可能使用Jemalloc或者TCmalloc这些高效的、带线程局部缓存的内存分配器。</p>
+<h2 id="acquire和release动作">acquire和release动作</h2>
+<p>所谓acquire，就是线程需要对一个资源进行访问，需要对它进行保护；所谓release，就是线程停止对资源的访问，结束对它的保护。</p>
+<p>这两个动作基本上都是成对出现的，因此，可以封装成一个Guard。</p>
 <div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
@@ -75,73 +85,31 @@
 </span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
 </span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
 </span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
-</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
-<pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span><span style="color:#75715e">#include</span><span style="color:#75715e">&lt;iostream&gt;</span><span style="color:#75715e">
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span><span style="color:#75715e">&lt;thread&gt;</span><span style="color:#75715e">
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">using</span> <span style="color:#66d9ef">namespace</span> std;
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SmartPointer</span>
-</span></span><span style="display:flex;"><span>{
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
-</span></span><span style="display:flex;"><span>  SmartPointer(<span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>p)
-</span></span><span style="display:flex;"><span>  {
-</span></span><span style="display:flex;"><span>    pointee_ <span style="color:#f92672">=</span> p;
-</span></span><span style="display:flex;"><span>    ref_counts_ <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
-</span></span><span style="display:flex;"><span>  }
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>pointee_;
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">int</span> ref_counts_;
-</span></span><span style="display:flex;"><span>};
-</span></span><span style="display:flex;"><span>SmartPointer <span style="color:#a6e22e">sp</span>(<span style="color:#66d9ef">new</span> <span style="color:#66d9ef">int</span>(<span style="color:#ae81ff">1</span>));
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">Reader</span>()
-</span></span><span style="display:flex;"><span>{
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">++</span>sp.ref_counts_;
-</span></span><span style="display:flex;"><span>  cout<span style="color:#f92672">&lt;&lt;*</span>(sp.pointee_)<span style="color:#f92672">&lt;&lt;</span>endl;
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">--</span>sp.ref_counts_;
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">Writer</span>()
-</span></span><span style="display:flex;"><span>{
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">if</span> (sp.ref_counts_ <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>)
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">delete</span> sp.pointee_;
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>()
-</span></span><span style="display:flex;"><span>{
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">thread</span> t1(Reader);
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">thread</span> t2(Reader);
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">thread</span> t3(Reader);
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">thread</span> t4(Writer);
-</span></span><span style="display:flex;"><span>  t1.join();
-</span></span><span style="display:flex;"><span>  t2.join();
-</span></span><span style="display:flex;"><span>  t3.join();
-</span></span><span style="display:flex;"><span>  t4.join();
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
-</span></span><span style="display:flex;"><span>}
-</span></span></code></pre></td></tr></table>
+<pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span>   <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">HazardPointerRecord</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      HazardPointerRecord(HplfdsHazardPointer<span style="color:#f92672">&lt;</span>MemoryAllocator<span style="color:#f92672">&gt;</span> <span style="color:#f92672">&amp;</span>manager,
+</span></span><span style="display:flex;"><span>                          <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>p, <span style="color:#66d9ef">int</span> thread_id)<span style="color:#f92672">:</span> manager_(manager)
+</span></span><span style="display:flex;"><span>      {
+</span></span><span style="display:flex;"><span>        p_ <span style="color:#f92672">=</span> p;
+</span></span><span style="display:flex;"><span>        thread_id_ <span style="color:#f92672">=</span> thread_id;
+</span></span><span style="display:flex;"><span>        manager.acquire(p_, thread_id_);
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">~</span>HazardPointerRecord()
+</span></span><span style="display:flex;"><span>      {
+</span></span><span style="display:flex;"><span>        manager_.release(p_, thread_id_);
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>      HplfdsHazardPointer<span style="color:#f92672">&lt;</span>MemoryAllocator<span style="color:#f92672">&gt;</span> <span style="color:#f92672">&amp;</span>manager_;
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>p_;
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">int</span> thread_id_;
+</span></span><span style="display:flex;"><span>    };
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">#define ACQUIRE_POINTER(p)\
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">  HazardPointerRecord record##p(memory_manager_, p, thread_id);
+</span></span></span></code></pre></td></tr></table>
 </div>
-</div><p>然而事实上，这样做是错的。其中的<strong>race condition</strong>请读者自行分析。</p>
-<p>那么，<strong>Hazard Pointer</strong>(<strong>HP</strong>)和<strong>Smart Pointer</strong>(<strong>SP</strong>)有什么区别呢？它们的共同点就是管理对应对象的生命周期，然而这两者有本质的区别，<strong>HP</strong>是线程安全的，而<strong>SP</strong>不是。</p>
-<p>在<strong>HP</strong>中，每个读线程维护着自己的<strong>HP</strong> <strong>list</strong>，这个<strong>list</strong>，只由该线程写。因此，它是线程安全的。该<strong>list</strong>会（可以）被其他线程读。</p>
-<p>每个写线程维护自己的<strong>retire list</strong>，该<strong>retire list</strong>只由该写线程进行读写。由于写线程可以读其他所有读线程的<strong>HP list</strong>，这样，差集（在自己的<strong>retire list</strong>，但是不在所有读线程的<strong>HP list</strong>里的指针），就是可以安全释放的指针。</p>
-<p>而<strong>SP</strong>，则被多个线程读写，<strong>18、19</strong>两行也无法做成原子操作，因此，<strong>SP</strong>和<strong>HP</strong>有本质的区别，使用<strong>SP</strong>的程序往往需要搭配使用锁等设施来保证线程安全。</p>
-<p>到这里，读者诸君对HP应该有了一定的了解。<a href="http://www.yebangyu.org/blog/2016/12/04/introductiontohazardpointer/">下集</a>，我们将介绍工业级代码里实现HP的一些思路和技巧，敬请期待。</p>
-
+</div>
 </div>
 
 
