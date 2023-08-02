@@ -52,7 +52,7 @@
     <div class="post">
   <h1>深入解析 Hazard Pointer (下)</h1>
   <time datetime=2023-08-02T21:30:06&#43;0800 class="post-date">Wed, Aug 2, 2023</time>
-  <p>看过<a href="http://www.yebangyu.org/blog/2015/12/10/introduction-to-hazard-pointer/">上篇</a>的朋友，可能会认为：这不就是<strong>Smart Pointer</strong>么？于是可能写出这样的代码：</p>
+  <p>看过<a href="https://www.yebangyu.org/2023/08/%E6%B7%B1%E5%85%A5%E8%A7%A3%E6%9E%90-hazard-pointer-%E4%B8%8A/">上篇</a>的朋友，可能会认为：这不就是<strong>Smart Pointer</strong>么？于是可能写出这样的代码：</p>
 <div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
@@ -141,6 +141,7 @@
 <p>每个写线程维护自己的<strong>retire list</strong>，该<strong>retire list</strong>只由该写线程进行读写。由于写线程可以读其他所有读线程的<strong>HP list</strong>，这样，差集（在自己的<strong>retire list</strong>，但是不在所有读线程的<strong>HP list</strong>里的指针），就是可以安全释放的指针。</p>
 <p>而<strong>SP</strong>，则被多个线程读写，<strong>18、19</strong>两行也无法做成原子操作，因此，<strong>SP</strong>和<strong>HP</strong>有本质的区别，使用<strong>SP</strong>的程序往往需要搭配使用锁等设施来保证线程安全。</p>
 <p>到这里，读者诸君对HP应该有了一定的了解。<a href="http://www.yebangyu.org/blog/2016/12/04/introductiontohazardpointer/">下集</a>，我们将介绍工业级代码里实现HP的一些思路和技巧，敬请期待。</p>
+
 </div>
 
 
