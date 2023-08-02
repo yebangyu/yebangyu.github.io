@@ -52,11 +52,11 @@
     <div class="post">
   <h1>深入解析 Hazard Pointer (下)</h1>
   <time datetime=2023-08-02T21:41:39&#43;0800 class="post-date">Wed, Aug 2, 2023</time>
-  <p>在前面几篇<a href="http://www.yebangyu.org/blog/2015/12/10/introduction-to-hazard-pointer/">文章</a>里，我们介绍了Hazard Pointer，一种用于lock free data structure设计中内存管理的利器，这个利器不仅思想简单，还可以用来防止ABA问题，读者诸君务必掌握。</p>
+  <p>在前面几篇<a href="https://www.yebangyu.org/2023/08/%E6%B7%B1%E5%85%A5%E8%A7%A3%E6%9E%90-hazard-pointer-%E4%B8%8A/">文章</a>里，我们介绍了Hazard Pointer，一种用于lock free data structure设计中内存管理的利器，这个利器不仅思想简单，还可以用来防止ABA问题，读者诸君务必掌握。</p>
 <p>本文作为第三部分，给出工业级代码中，实现Hazard Pointer的一些策略和需要注意的点。</p>
 <h2 id="hazard-pointer管理">Hazard Pointer管理</h2>
 <p>我们知道Hazard Pointer封装了原始指针，那么Hazard Pointer的内存和生命周期本身如何管理呢？以下是常见的策略：</p>
-<p>1，Hazard Pointer本身的内存只分配，不释放。在stack、queue等数据结构里，需要的Hazard Pointer数量一般为1或者2，所以不释放问题不大。对于skip list这种数据结构又有遍历需求的，那么Hazard Pointer可能就不是非常适用了，可以考虑使用<a href="http://www.yebangyu.org/blog/2016/09/09/epochbasedreclamation/">Epoch Based Reclamation</a>技术。据我所知，这也是memsql使用的内存回收策略。</p>
+<p>1，Hazard Pointer本身的内存只分配，不释放。在stack、queue等数据结构里，需要的Hazard Pointer数量一般为1或者2，所以不释放问题不大。对于skip list这种数据结构又有遍历需求的，那么Hazard Pointer可能就不是非常适用了，可以考虑使用<a href="https://www.yebangyu.org/2023/07/epoch-base-reclamation/">Epoch Based Reclamation</a>技术。据我所知，这也是memsql使用的内存回收策略。</p>
 <p>2，每个线程拥有、管理自己的retire list和hazard pointer list ，而不是所有线程共享一个retire list，这样可以避免维护retire list和hazard pointer list的开销，否则我们可能又得想尽脑汁去设计另外一套lock free的策略来管理这些list，先有鸡先有蛋，无穷无尽。所谓retire list就是指逻辑删除后待物理回收的指针列表。</p>
 <p>3，每个线程负责回收自己的retire list中记录维护的内存。这样，retire list是一个线程局部的数据结构，自己写，自己读，吃自己的狗粮。</p>
 <p>4，只有当retire list的大小（数量）达到一定的阈值时，才进行GC。这样，可以把GC的开销进行分摊，同时，应该尽可能使用Jemalloc或者TCmalloc这些高效的、带线程局部缓存的内存分配器。</p>
