@@ -20,21 +20,23 @@
 
 
   
-  <!DOCTYPE html>
-
-<html>
-  <head>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
-
-    
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
-
-    
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"
-        onload="renderMathInElement(document.body);"></script>
-  </head>
-  ...
-</html>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css"
+  integrity="sha384-vKruj+a13U8yHIkAyGgK1J3ArTLzrFGBbBc0tDp4ad/EyewESeXE/Iv67Aj8gKZ0" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.js"
+  integrity="sha384-PwRUT/YqbnEjkZO0zZxNqcxACrXe+j766U2amXcgMg5457rve2Y7I6ZJSm2A0mS4" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/contrib/auto-render.min.js"
+  integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"
+  onload="renderMathInElement(document.body);"></script>
+<script defer>
+  document.addEventListener("DOMContentLoaded", function () {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "$", right: "$", display: false }
+      ]
+    });
+  });
+</script>
 
   
 
@@ -98,7 +100,7 @@
 <h3 id="遇到相等的元素怎么办">遇到相等的元素怎么办？</h3>
 <p>左右扫描，如果遇到和pivot相等的元素怎么办？是暂停扫描还是继续扫描？</p>
 <p>首先，两个方向采取的策略应该是一样的，也就是要么都暂停（然后交换），要么都继续扫描。否则将导致两个子数组不平衡。</p>
-<p>其次，为了更好分析这个问题，我们不妨考虑所有元素都相同的情形。如果我们遇到和pivot相等的时候不停止，那么从左到右扫描时，两指针将相遇，此次过程结束。结果呢？什么都没做，却得到了两个大小极其不均衡的数组。算法时间复杂度为O($$n^2$$)。如果我们选择遇到相等元素时停止扫描，然后交换，那么虽然看上去交换的次数变多了，但是我们将得到大小相等（或者差1）的两个子数组。算法的时间复杂度为O($$nlgn$$)。</p>
+<p>其次，为了更好分析这个问题，我们不妨考虑所有元素都相同的情形。如果我们遇到和pivot相等的时候不停止，那么从左到右扫描时，两指针将相遇，此次过程结束。结果呢？什么都没做，却得到了两个大小极其不均衡的数组。算法时间复杂度为O($n^2$)。如果我们选择遇到相等元素时停止扫描，然后交换，那么虽然看上去交换的次数变多了，但是我们将得到大小相等（或者差1）的两个子数组。算法的时间复杂度为O($nlgn$)。</p>
 <p>因此，遇到和pivot相等的元素时候我们都暂停扫描，交换元素后继续，直到指针相遇或者交叉。</p>
 <h3 id="小数组怎么处理">小数组怎么处理？</h3>
 <p>随着不断的递归，待排序的子数组大小越来越小，所含元素越来越少。当子数组所含元素较少（比如说，20个）时，由于它们已经基本有序，我们改变策略，对它们改用插入排序。这也方便了三数取中策略的实现，否则我们在三数取中的时候还得特殊考虑子数组有0个、1个、2个元素的情形。当子数组多大时我们转换排序方法呢？这个最优值就依赖于体系结构了。为了找到你系统中它的最优值，请多测试！测试！测试！</p>
@@ -355,7 +357,7 @@
 </div>
 </div><p>深入分析这样的case，将会对编写正确的快速排序的困难性有更深的体会，虽然我们已经有循环不变式这个强大的工具。</p>
 <p>3，快速排序所需的栈空间是多少？能否进一步优化？</p>
-<p>4，SoupenSort的时间复杂度是多少？O($$n^2$$)还是O($$nlgn$$)？如果是前者，那么，什么情况下是二次的？</p>
+<p>4，SoupenSort的时间复杂度是多少？O($n^2$)还是O($nlgn$)？如果是前者，那么，什么情况下是二次的？</p>
 
 </div>
 
