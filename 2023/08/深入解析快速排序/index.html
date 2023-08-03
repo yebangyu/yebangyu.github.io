@@ -296,22 +296,74 @@
 <p>测试结果：</p>
 <p>1000W个随机打乱的32位无符号整数</p>
 <p>开启O2优化（单位：秒）：</p>
-<p>sort: 1.06</p>
-<p>SoupenSort: 1.20</p>
-<p>qsort: 2.08</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">sort</th>
+<th style="text-align:center">SoupenSort</th>
+<th style="text-align:right">qsort</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">1.06</td>
+<td style="text-align:center">1.20</td>
+<td style="text-align:right">2.08</td>
+</tr>
+</tbody>
+</table>
 <p>未开启O2优化（单位：秒）：</p>
-<p>sort: 3.29</p>
-<p>SoupenSort: 2.93</p>
-<p>qsort: 2.91</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">sort</th>
+<th style="text-align:center">SoupenSort</th>
+<th style="text-align:right">qsort</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">3.29</td>
+<td style="text-align:center">2.93</td>
+<td style="text-align:right">2.91</td>
+</tr>
+</tbody>
+</table>
 <p>1000W个相同的整数</p>
 <p>开启O2优化（单位：秒）：</p>
-<p>sort: 0.23</p>
-<p>SoupenSort: 0.27</p>
-<p>qsort: 0.59</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">sort</th>
+<th style="text-align:center">SoupenSort</th>
+<th style="text-align:right">qsort</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">0.23</td>
+<td style="text-align:center">0.27</td>
+<td style="text-align:right">0.59</td>
+</tr>
+</tbody>
+</table>
 <p>未开启O2优化（单位：秒）：</p>
-<p>sort: 2.60</p>
-<p>SoupenSort: 1.56</p>
-<p>qsort: 0.76</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">sort</th>
+<th style="text-align:center">SoupenSort</th>
+<th style="text-align:right">qsort</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">2.60</td>
+<td style="text-align:center">1.56</td>
+<td style="text-align:right">0.76</td>
+</tr>
+</tbody>
+</table>
 <p>什么结论？</p>
 <p>没开优化，那么所需时间 qsort &lt; SoupenSort &lt; sort</p>
 <p>开了优化，那么所需时间 sort &lt; SoupenSort &lt; qsort</p>
