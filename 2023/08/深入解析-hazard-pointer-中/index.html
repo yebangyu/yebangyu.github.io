@@ -142,7 +142,7 @@
 <p>在<strong>HP</strong>中，每个读线程维护着自己的<strong>HP</strong> <strong>list</strong>，这个<strong>list</strong>，只由该线程写。因此，它是线程安全的。该<strong>list</strong>会（可以）被其他线程读。</p>
 <p>每个写线程维护自己的<strong>retire list</strong>，该<strong>retire list</strong>只由该写线程进行读写。由于写线程可以读其他所有读线程的<strong>HP list</strong>，这样，差集（在自己的<strong>retire list</strong>，但是不在所有读线程的<strong>HP list</strong>里的指针），就是可以安全释放的指针。</p>
 <p>而<strong>SP</strong>，则被多个线程读写，<strong>18、19</strong>两行也无法做成原子操作，因此，<strong>SP</strong>和<strong>HP</strong>有本质的区别，使用<strong>SP</strong>的程序往往需要搭配使用锁等设施来保证线程安全。</p>
-<p>到这里，读者诸君对HP应该有了一定的了解。<a href="http://www.yebangyu.org/blog/2016/12/04/introductiontohazardpointer/">下集</a>，我们将介绍工业级代码里实现HP的一些思路和技巧，敬请期待。</p>
+<p>到这里，读者诸君对HP应该有了一定的了解。<a href="https://www.yebangyu.org/2023/08/%E6%B7%B1%E5%85%A5%E8%A7%A3%E6%9E%90-hazard-pointer-%E4%B8%8B/">下集</a>，我们将介绍工业级代码里实现HP的一些思路和技巧，敬请期待。</p>
 
 </div>
 
