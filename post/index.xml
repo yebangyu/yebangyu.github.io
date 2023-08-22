@@ -80,12 +80,12 @@
     </item>
     
     <item>
-      <title>Epoch Base Reclamation</title>
-      <link>https://www.yebangyu.org/2023/07/epoch-base-reclamation/</link>
+      <title>Epoch Based Reclamation</title>
+      <link>https://www.yebangyu.org/2023/07/epoch-based-reclamation/</link>
       <pubDate>Thu, 06 Jul 2023 10:09:52 +0800</pubDate>
       
-      <guid>https://www.yebangyu.org/2023/07/epoch-base-reclamation/</guid>
-      <description>介绍一种无锁垃圾回收算法 Epoch Base Reclamation</description>
+      <guid>https://www.yebangyu.org/2023/07/epoch-based-reclamation/</guid>
+      <description>介绍一种无锁垃圾回收算法 Epoch Based Reclamation</description>
     </item>
     
   </channel>
