@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-Hans" lang="zh-Hans">
+<head>
+  <link href="https://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.115.0">
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Epoch Based Reclamation &middot; Yebangyu</title>
+  <meta name="description" content="" />
+
+  
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/print.css" media="print">
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/poole.css">
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/syntax.css">
+  <link type="text/css" rel="stylesheet" href="https://www.yebangyu.org/css/hyde.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Abril+Fatface|PT+Sans:400,400i,700">
+
+
+  
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  
+</head>
+
+  <body class=" ">
+  <aside class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="https://www.yebangyu.org/"><h1>Yebangyu</h1></a>
+      <p class="lead">
+       热爱生活、历史与计算机 
+      </p>
+    </div>
+
+    <nav>
+      <ul class="sidebar-nav">
+        <li><a href="https://www.yebangyu.org/">Home</a> </li>
+        <li><a href="https://www.yebangyu.org/about/"> About Me </a></li><li><a href="https://www.yebangyu.org/categories/"> Categories </a></li>
+      </ul>
+    </nav>
+
+    <p>Copyright (c) 2023</p>
+  </div>
+</aside>
+
+    <main class="content container">
+    <div class="post">
+  <h1>Epoch Based Reclamation</h1>
+  <time datetime=2023-07-06T10:09:52&#43;0800 class="post-date">Thu, Jul 6, 2023</time>
+  <h2 id="楔子">楔子</h2>
+<p>一般认为，用C/C++编写Lock Free代码非常困难，主要原因无非是两个：</p>
+<blockquote>
+<ul>
+<li>内存模型</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>内存回收</li>
+</ul>
+</blockquote>
+<p>C++11引入了标准的内存模型，在此之前，C++程序员依赖于具体的体系结构特点和编译器提供的feature来保证正确的内存访问语义。C++11出来后，程序员编写健壮的、可移植的lock free代码成为可能。</p>
+<p>但是内存回收问题依旧存在。我们知道，和Java这种提供自动gc的语言相比，C++程序员刀耕火种，得自己管理内存。当一个线程正在访问某块内存，而另外一个线程将它释放将是一个灾难行为。解决内存回收问题在lock free里显得更加困难。</p>
+<p>目前用于lock free代码的内存回收的经典方法有：Lock Free Reference Counting、Hazard Pointer、Epoch Based Reclamation、Quiescent State Based Reclamation等。本文我们介绍Epoch Based Reclamation方法。据我所知，这是第一篇介绍这个方法的中文资料。</p>
+<h2 id="概念">概念</h2>
+<p>1，逻辑删除和物理删除：逻辑删除仅仅是在逻辑上删除该节点，该节点在被逻辑删除之时可能会有其他线程正在访问它，而逻辑删除之后不会再被线程访问到。逻辑删除不回收内存空间。物理删除则是将对应的内存空间回收。一般逻辑删除对应delete，物理删除对应free或者reclaim。</p>
+<p>2，Grace Period：记时间段T＝[t1,t2]，如果t1之前逻辑删除的节点，都可以在t2之后安全的回收，那么称T是一个Grace Period。t2之后保证不会有任何线程会访问在t1之前逻辑删除的节点。</p>
+<p>3，临界区：在本文，临界区指的是线程访问共享内存资源的代码段。和传统上所说的临界区意义不同。</p>
+<h2 id="实现">实现</h2>
+<p>我们依然先给出实现，再讲原理。注意到这里为了能focus我们的主题，我们刻意简化为四个线程，其中三个读线程，它们对数据都是只读的；而只有一个写线程可以对资源进行改写和删除，因此不需要加锁。</p>
+<p>也请注意，以下伪代码只起示范作用，离真正生产环境实现还差很远。尽管如此，我们还是提供了一些实现细节和关键点(参考最后的思考一节)。</p>
+<div class="highlight"><div style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">41
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">42
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">43
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">44
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">45
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">46
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">47
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">48
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">49
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">50
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">51
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">52
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span><span style="color:#75715e">#define N_THREADS 4 </span><span style="color:#75715e">//一共4个线程
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">bool</span> active[N_THREADS] <span style="color:#f92672">=</span> {false};
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> epoches[N_THREADS] <span style="color:#f92672">=</span> {<span style="color:#ae81ff">0</span>};
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> global_epoch <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>vector<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int</span><span style="color:#f92672">*&gt;</span> retire_list[<span style="color:#ae81ff">3</span>];
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">read</span>(<span style="color:#66d9ef">int</span> thread_id)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  active[thread_id] <span style="color:#f92672">=</span> true;
+</span></span><span style="display:flex;"><span>  epoches[thread_id] <span style="color:#f92672">=</span> global_epoch;
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">//进入临界区了。可以安全的读取
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">//...... 
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">//读取完毕，离开临界区
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  active[thread_id] <span style="color:#f92672">=</span> false;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">logical_deletion</span>(<span style="color:#66d9ef">int</span> thread_id)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  active[thread_id] <span style="color:#f92672">=</span> true;
+</span></span><span style="display:flex;"><span>  epoches[thread_id] <span style="color:#f92672">=</span> global_epoch;
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">//进入临界区了，这里，我们可以安全的读取
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">//好了，假如说我们现在要删除它了。先逻辑删除。
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">//而被逻辑删除的tmp指向的节点还不能马上被回收，因此把它加入到对应的retire list
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  retire_list[global_epoch].push_back(tmp);
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">//离开临界区
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  active[thread_id] <span style="color:#f92672">=</span> false;
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">//看看能不能物理删除
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  try_gc();
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">bool</span> <span style="color:#a6e22e">try_gc</span>()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">int</span> <span style="color:#f92672">&amp;</span>e <span style="color:#f92672">=</span> global_epoch;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> N_THREADS; i<span style="color:#f92672">++</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (active[i] <span style="color:#f92672">&amp;&amp;</span> epoches[i] <span style="color:#f92672">!=</span> e) {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//还有部分线程没有更新到最新的全局的epoch值
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">//这时候可以回收(e + 1) % 3对应的retire list。
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        free((e <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">%</span> <span style="color:#ae81ff">3</span>);<span style="color:#75715e">//不是free(e)，也不是free(e-1)。参看下面
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> false;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">//更新global epoch
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  e <span style="color:#f92672">=</span> (e <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">%</span> <span style="color:#ae81ff">3</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">//更新之后，那些active线程中，部分线程的epoch值可能还是e - 1（模3）
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">//那些inactive的线程，之后将读到最新的值，也就是e。
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">//不管如何，(e + 1) % 3对应的retire list的那些内存，不会有人再访问到了，可以回收它们了
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">//因此epoch的取值需要有三种，仅仅两种是不够的。
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  free((e <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">%</span> <span style="color:#ae81ff">3</span>);<span style="color:#75715e">//不是free(e)，也不是free(e-1)。参看下面
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">bool</span> <span style="color:#a6e22e">free</span>(<span style="color:#66d9ef">int</span> epoch)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">for</span> each pointer in retire_list[epoch]
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (pointer is not NULL)
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">delete</span> pointer;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="原理">原理</h2>
+<p>算法维护了一个全局的epoch(取值为0、1、2)和三个全局的retire_list（每个全局的epoch对应一个retire list, retire list 存放逻辑删除后待回收的节点指针）。除此之外我们为每个线程维护一个局部的active flag和epoch(取值自然也为0、1、2)。</p>
+<h3 id="读线程">读线程</h3>
+<p>首先设置自己的active flag 为true，表明自己需要访问共享内存。然后将自己的局部的epoch设置为全局的epoch值。</p>
+<p>这之后线程就进入临界区，可以放心的读取资源了，不用担心内存会被回收。</p>
+<p>离开临界区时，将自己的active flag设置为false即可。</p>
+<h3 id="写线程">写线程</h3>
+<p>这里说的写线程是指会对资源进行删除的线程。首先进行逻辑删除，然后尝试对它进行物理删除，也就是回收。</p>
+<p>令全局的epoch值为e。首先检查，如果存在活动线程的局部epoch值不等于全局epoch值，那么可以回收retire_list[(e+1) % 3]。</p>
+<p>如果不存在，那么我们把全局epoch的值更新为(e+1)%3，然后再回收对应的retire list。</p>
+<p>有点绕？这里关键是理清线程局部epoch和全局epoch的关系：在这个算法里，任何时刻，全局epoch的值如果为e，那么线程的局部epoch值要么也为e，要么为e-1，不可能为e+1。</p>
+<p>所以[epoch, epoch + 2]（模3）构成了一个Grace Period。</p>
+<p>当全局epoch的值为1的时候，线程的局部epoch要么是1，要么是0，不可能是2。因此[2,1]构成了一个Grace Period，也就是说2对应的retire list这时候可以放心的回收了。</p>
+<p>当全局epoch的值为0的时候，线程的局部epoch要么是0，要么是2，不可能是1。因此[1,0]构成了一个Grace Period，也就是说1对应的retire list这时候可以放心的回收了。</p>
+<p>当全局epoch的值为2的时候，线程的局部epoch要么是2，要么是1，不可能是0。因此[0,2]构成了一个Grace Period，也就是说0对应的retire list这时候可以放心的回收了。</p>
+<p>也因此，当全局epoch值为2时，如果存在部分活跃线程的局部epoch等于1，那么retire_list[1]将不能立马回收。如果这些活跃线程不退出临界区（在里面不断的读、疯狂的读，或者死了），那么retire_list[1]纪录的那些内存将一直无法回收。</p>
+<p>这也就是在Epoch Based Reclamation中，回收操作可能被读延迟的原因所在。</p>
+<h2 id="思考">思考</h2>
+<p>1，代码中8、9两行是写一个变量(active[i])，读另外一个变量(global_epoch)，在x86下可能会乱序，这里是否需要一个cpu级别的memory barrier？如果被乱序，有没有影响？</p>
+<p>2，<code>retire_list[global_epoch].push_back(tmp);</code> 能否改为 <code>retire_list[epoches[thread_id]].push_back(tmp);</code> ？也就是说这里能否改为使用线程局部epoch值？</p>
+<p>3，和Hazard Pointer相比，Epoch Based Reclamation 有什么优点和缺点？</p>
+<p>4，为什么epoch有三个取值0、1、2？能不能仅使用两个？</p>
+<p>5，线程局部变量我们使用了<code>active</code>数组和<code>epoches</code>数组，这里会有性能问题，为什么？提示：False Sharing</p>
+
+</div>
+
+
+    </main>
+
+    
+      
+    
+  </body>
+</html>
